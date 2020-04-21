@@ -1,3 +1,5 @@
-#### 09 April, try to use git on O2
-- sinlge cell sequencing data as a practice, GSE107585
----
+####Published SCSeq data formatting
+In progress:  
+GSE107585, PMID 29622724  
+GSE133486, PMID 31644425  
+
