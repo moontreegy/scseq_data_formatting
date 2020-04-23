@@ -158,16 +158,29 @@ seurat_metadata <- seuratObj@meta.data
 str(seurat_metadata)
 Idents(seuratObj) <- "celltype"
 
+clusterMetadataTable <- table(seuratObj@meta.data[ , "celltype"]) %>% as.data.frame()
+colnames(clusterMetadataTable) <- c("celltype_id", "count")
+# export clusterMetadataTable
+write.csv(clusterMetadataTable,
+          file = paste0(results, GSE, "_", sample, "_clusterMetadataTable_", Species, "_", Tissue, ".csv"),
+          row.names = FALSE)
+
 # extract data matrix from DotPlot function
 dot <- DotPlot(object = seuratObj, features = all_genes)
-Matrix <- dot$data
+gene2clusterTable <- dot$data
+colnames(gene2clusterTable) <- c("avg_exp", "pct_exp", "gene", "celltype_id", "avg_exp_scaled")
 
-# export Matrix
-write.csv(Matrix,
-          file = paste0(results, GSE, "_", sample, "_Matrix_", Species, "_", Tissue, ".csv"))
+# export gene2clusterTable
+write.csv(gene2clusterTable,
+          file = paste0(results, GSE, "_", sample, "_gene2clusterTable_", Species, "_", Tissue, ".csv"),
+          row.names = FALSE)
 ```
 
 # Notes
+
+2020-04-23:
+
+  * Update output file name from Matrix to gene2clusterTable; Add one more output file clusterMetadataTable.
 
 2020-04-19:
 
