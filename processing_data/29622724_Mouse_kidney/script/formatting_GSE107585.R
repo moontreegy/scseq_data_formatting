@@ -127,6 +127,13 @@ Idents(seuratObj) <- "celltype"
 
 clusterMetadataTable <- table(seuratObj@meta.data[ , "celltype"]) %>% as.data.frame()
 colnames(clusterMetadataTable) <- c("celltype_id", "count")
+
+cluster.anno<-read.delim(paste0(direc_results,"annotate_cluster_name.txt"),
+                         header = F)
+names(cluster.anno)<-c("celltype_id","cell_name")
+
+clusterMetadataTable<-merge(clusterMetadataTable, cluster.anno)
+
 # export clusterMetadataTable
 write.csv(clusterMetadataTable,
           file = paste0(direc_results, PMID, "_clusterMetadataTable_", Species, "_", Tissue, ".csv"),
@@ -141,5 +148,7 @@ colnames(gene2clusterTable) <- c("avg_exp", "pct_exp", "gene", "celltype_id", "a
 write.csv(gene2clusterTable,
           file = paste0(direc_results, PMID, "_gene2clusterTable_", Species, "_", Tissue, ".csv"),
           row.names = FALSE)
+
+
 
 
