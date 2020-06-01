@@ -1,0 +1,214 @@
+---
+title: "E-MTAB-8698 Wild type"
+author: "Yifang Liu"
+date: "`r Sys.Date()`"
+output:
+  rmdformats::html_clean:
+    code_folding: hide
+    fig_width: 10
+    fig_height: 10
+    highlight: kate
+    thumbnails: false
+    lightbox: true
+    gallery: true
+---
+
+```{r knitr_init, echo=FALSE, cache=FALSE}
+library(knitr)
+library(rmdformats)
+
+options(max.print = 200)
+opts_chunk$set(echo = TRUE,
+               cache = FALSE,
+               prompt = FALSE,
+               tidy = TRUE,
+               comment = NA,
+               message = FALSE,
+               warning = FALSE,
+               dev = c("png", "pdf"),
+               fig.width = 10,
+               fig.height = 10,
+               fig.align = "center",
+               # fig.path = 'PDFs_/',
+               dpi = 72)
+opts_knit$set(width = 75)
+```
+
+# Overview
+
+Process E-MTAB-8698 Wild type.
+
+```{r setup}
+set.seed(123)
+options(stringsAsFactors = FALSE)
+
+suppressPackageStartupMessages({
+  library(Matrix)
+  library(tidyverse)
+  library(Seurat)
+  library(GEOquery)
+})
+```
+
+```{r download_data}
+raw_data <- "../raw_data/"
+if (!dir.exists(raw_data)) {dir.create(raw_data)}
+
+GSE <- "E-MTAB-8698"
+# geo <- getGEOSuppFiles(GSE, makeDirectory = FALSE, baseDir = raw_data)
+
+Species <- "Drosophila"
+Tissue <- "Blood"
+```
+
+```{bash}
+wget -O ../raw_data/E-MTAB-8698.processed.3.zip ftp://ftp.ebi.ac.uk/pub/databases/microarray/data/experiment/MTAB/E-MTAB-8698/E-MTAB-8698.processed.3.zip
+wget -O ../raw_data/E-MTAB-8698.processed.5.zip ftp://ftp.ebi.ac.uk/pub/databases/microarray/data/experiment/MTAB/E-MTAB-8698/E-MTAB-8698.processed.5.zip
+unzip -o ../raw_data/E-MTAB-8698.processed.3.zip -d ../raw_data/
+unzip -o ../raw_data/E-MTAB-8698.processed.5.zip -d ../raw_data/
+tar -zxf ../raw_data/raw_feature_bc_matrix_RRCZ22.tgz --directory ../raw_data/
+mv ../raw_data/raw_feature_bc_matrix ../raw_data/raw_feature_bc_matrix_RRCZ22
+tar -zxf ../raw_data/raw_feature_bc_matrix_RRCZ23.tgz --directory ../raw_data/
+mv ../raw_data/raw_feature_bc_matrix ../raw_data/raw_feature_bc_matrix_RRCZ23
+```
+
+```{r read_matrix}
+sample <- "Wild-type"
+input_data_path <- "raw_feature_bc_matrix_RRCZ22/"
+input_metadata_path <- "NI_cell_cluster_ID.txt"
+
+barcode_path <- paste0(raw_data, input_data_path, "barcodes.tsv.gz")
+features_path <- paste0(raw_data, input_data_path, "features.tsv.gz")
+matrix_path <- paste0(raw_data, input_data_path, "matrix.mtx.gz")
+
+mat <- readMM(file = matrix_path)
+feature_names <- read.delim(features_path,
+                            header = FALSE)
+barcode_names <- read.delim(barcode_path,
+                            header = FALSE)
+dim(mat)
+mat[1:3, 1:3]
+colnames(mat) <- barcode_names$V1
+rownames(mat) <- feature_names$V1
+mat[1:3, 1:3]
+
+# metadata
+metadata_path <- paste0(raw_data, input_metadata_path)
+metadata <- read.delim(metadata_path,
+                       header = TRUE)
+str(metadata)
+
+# check celltype column name in this particular data, change name to celltype if needed
+colnames(metadata)
+colnames(metadata)[2] <- "celltype"
+# metadata$celltype <- as.factor(metadata$celltype)
+str(metadata)
+
+# filter mat based on metadata
+metadata$Cell_ID <- paste0(metadata$Cell_ID, "-1")
+str(metadata)
+mat <- mat[ , metadata$Cell_ID]
+dim(mat)
+```
+
+```{r export_rawCounts_logNormalizeMatrix_cell2clusterAssignment}
+results <- "../results/"
+if (!dir.exists(results)) {dir.create(results)}
+
+# # not use currently
+# # export rawCounts (sparse matrix Rds format)
+# rawCounts <- mat
+# saveRDS(rawCounts,
+#         file = paste0(results, GSE, "_", sample, "_rawCounts_", Species, "_", Tissue, ".Rds"))
+#
+# # export logNormalizeMatrix
+# logNormalizeMatrix <- log1p(sweep(mat, 2, Matrix::colSums(mat), FUN = "/") * 10000)
+# saveRDS(logNormalizeMatrix,
+#         file = paste0(results, GSE, "_", sample, "_logNormalizeMatrix_", Species, "_", Tissue, ".Rds"))
+#
+# # export cell2clusterAssignment
+# cell2clusterAssignment <- metadata[ , c("celltype"), drop = FALSE]
+# write.csv(cell2clusterAssignment,
+#           file = paste0(results, GSE, "_", sample, "_cell2clusterAssignment_", Species, "_", Tissue, ".csv"))
+```
+
+```{r export_pseudoBulkMatrix}
+# # not use currently
+# # will find a faster way to generate pseudoBulkMatrix in the future
+# df <- mat %>% as.matrix() %>% as.data.frame() %>% t()
+# df[1:3, 1:3]
+#
+# all.equal(row.names(metadata), row.names(df))
+# df <- cbind(metadata[ , c("celltype"), drop = FALSE], df)
+# df[1:3, 1:3]
+#
+# # sum gene counts by each celltype
+# df_group_by_celltype <- df %>%
+#   group_by(celltype) %>%
+#   summarise_all(sum) %>%
+#   as.data.frame()
+# class(df_group_by_celltype)
+#
+# row.names(df_group_by_celltype) <- df_group_by_celltype$celltype
+# df_group_by_celltype$celltype <- NULL
+#
+# df_group_by_celltype <- df_group_by_celltype %>% t()
+#
+# df_group_by_celltype[1:3, 1:3]
+# str(df_group_by_celltype)
+#
+# # export pseudoBulkMatrix
+# pseudoBulkMatrix <- df_group_by_celltype
+# write.csv(pseudoBulkMatrix,
+#           file = paste0(results, GSE, "_", sample, "_pseudoBulkMatrix_", Species, "_", Tissue, ".csv"))
+```
+
+```{r create_seuratObj}
+seuratObj <- CreateSeuratObject(counts = mat)
+seuratObj <- NormalizeData(seuratObj)
+seuratObj <- FindVariableFeatures(seuratObj, selection.method = "vst", nfeatures = 2000)
+all_genes <- rownames(seuratObj)
+seuratObj <- ScaleData(seuratObj, features = all_genes)
+seuratObj$celltype <- as.factor(metadata$celltype)
+seurat_metadata <- seuratObj@meta.data
+str(seurat_metadata)
+Idents(seuratObj) <- "celltype"
+
+clusterMetadataTable <- table(seuratObj@meta.data[ , "celltype"]) %>% as.data.frame()
+colnames(clusterMetadataTable) <- c("celltype_id", "count")
+# export clusterMetadataTable
+write.csv(clusterMetadataTable,
+          file = paste0(results, GSE, "_", sample, "_clusterMetadataTable_", Species, "_", Tissue, ".csv"),
+          row.names = FALSE)
+
+# extract data matrix from DotPlot function
+dot <- DotPlot(object = seuratObj, features = all_genes)
+gene2clusterTable <- dot$data
+colnames(gene2clusterTable) <- c("avg_exp", "pct_exp", "gene", "celltype_id", "avg_exp_scaled")
+
+# export gene2clusterTable
+write.csv(gene2clusterTable,
+          file = paste0(results, GSE, "_", sample, "_gene2clusterTable_", Species, "_", Tissue, ".csv"),
+          row.names = FALSE)
+```
+
+# Notes
+
+2020-06-01:
+
+  * Process E-MTAB-8698 Wild type.
+
+2020-04-23:
+
+  * Update output file name from Matrix to gene2clusterTable; Add one more output file clusterMetadataTable.
+
+2020-04-19:
+
+  * Process GSE133486 10XAdiposeNuclei.
+
+# Session Info
+
+```{r sessioninfo, message=TRUE}
+sessionInfo()
+```
+
