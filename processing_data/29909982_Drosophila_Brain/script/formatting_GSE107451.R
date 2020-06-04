@@ -38,7 +38,7 @@ if (!file.exists(file.script.name)) {file.create(file.script.name)}
 # write(paste0("Paper title: ", paper.title,"\n\n"),file=file.rmd.name,append=TRUE)
 # write(paste0("Paper link: ", paper.link,"\n\n"),file=file.rmd.name,append=TRUE)
 # write(paste0("GEO link: ", GEO.link,"\n\n"),file=file.rmd.name,append=TRUE)
-# write(paste0("Note: ", "file 'FBP_meta_annotation_formated.tsv' in rawdata is from Sudir, and I use the metafata from supplementary","\n\n"),
+# write(paste0("Note: ", "file 'FBP_meta_annotation_formated.tsv' in rawdata is from Sudir, and I use the metadata from supplementary","\n\n"),
 #       file=file.rmd.name,append=TRUE)
 # write(paste0("Note: ", "I processed 57k data, and they also have raw 157k datasets to do filtering","\n\n"),
 #       file=file.rmd.name,append=TRUE)
