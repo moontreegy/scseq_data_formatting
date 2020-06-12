@@ -33,15 +33,26 @@ if (!file.exists(file.rmd.name)) {file.create(file.rmd.name)}
 if (!file.exists(file.script.name)) {file.create(file.script.name)}
 
 
-# write(paste0("PMID: ", PMID,"\n\n"),file=file.rmd.name,append=TRUE)
-# write(paste0("Species: ", Species,"\n\n"),file=file.rmd.name,append=TRUE)
-# write(paste0("Tissue: ", Tissue,"\n\n"),file=file.rmd.name,append=TRUE)
-# write(paste0("Paper title: ", paper.title,"\n\n"),file=file.rmd.name,append=TRUE)
-# write(paste0("Paper link: ", paper.link,"\n\n"),file=file.rmd.name,append=TRUE)
-# write(paste0("GEO link: ", GEO.link,"\n\n"),file=file.rmd.name,append=TRUE)
-# write(paste0("Note:\n\tFolders in the raw data folder (NormalMetadata, StarvationMetadata) is normalized matrix provided by Sudhir","\n\t",
-# "Only using metadata, there are two conditions, normal and starved, also generating a merged version","\n\n"),file=file.rmd.name,append=TRUE)
+# write(paste0("PMID: ", PMID,"\n"),file=file.rmd.name,append=TRUE)
+# write(paste0("Species: ", Species,"\n"),file=file.rmd.name,append=TRUE)
+# write(paste0("Tissue: ", Tissue,"\n"),file=file.rmd.name,append=TRUE)
+# write(paste0("Paper title: ", paper.title,"\n"),file=file.rmd.name,append=TRUE)
+# write(paste0("Paper link: ", paper.link,"\n"),file=file.rmd.name,append=TRUE)
+# write(paste0("GEO link: ", GEO.link,"\n"),file=file.rmd.name,append=TRUE)
+# write(paste0("Note:\n
+# \tSupplementary providing two conditions in this paper, see raw data folder.\n
+# \t\tStarvationCondition_finalaggr: 17493 genes, 4645 cells \n
+# \t\tNormalCondition_finalaggr: 17493 genes, 4708 cells\n
+# \tSudhir contacted author getting two metadata folders, also contain normalized matrix, only using metadata for processing, see raw data folder.\n
+# \t\tCondition based data processing\n
+# \t\t\tUsing NormalMetadata for NormalCondition_finalaggr, getting 4407 cells (the number is consistent with paper) \n
+# \t\t\tStarvationMetadata only contains information about merged condition, so using StarvationMetadata match StarvationCondition_finalaggr, getting 4347 cells\n
+# \t\tMerged condition\n
+# \t\t\tUsing StarvationMetadata to match StarvationCondition_finalaggr and NormalCondition_finalaggr, getting 4347 and 4349 cells, 8696 in total (which is consistent with paper)\n\n"),
+#       file=file.rmd.name,append=TRUE)
 # write(paste0("Result location: ", path.result,"\n\n"),file=file.rmd.name,append=TRUE)
+
+
 
 # 
 # getGEOSuppFiles(GSE.id,makeDirectory = F,baseDir= path.raw.data)
@@ -228,12 +239,37 @@ for(i in 1:length(file.meta)){
   names(metadata)[i]<-sample.meta.names[i]
   dim(metadata[[i]]) %>% print()
 }
-metadata[[2]] %>% str()
-
 #     cells
 # [1] 4407    4
 # [1] 8696    5
 
+
+metadata[[2]] %>% str()
+
+
+intersect(metadata[[2]]$Cell, paste0(colnames(SCSeq.mtx[[1]]),"_1")) %>% length()
+# [1] 4349
+intersect(metadata[[2]]$Cell, paste0(colnames(SCSeq.mtx[[2]]),"_2")) %>% length()
+# [1] 4347
+
+raw.merged.SCSeq.mtx<-list()
+for (i in 1:length(SCSeq.mtx)) {
+  raw.merged.SCSeq.mtx[[i]]<-SCSeq.mtx[[i]]
+  colnames(raw.merged.SCSeq.mtx[[i]])<-paste0(colnames(SCSeq.mtx[[i]]),"_",i)
+  tmp<-intersect(metadata[[2]]$Cell, colnames(raw.merged.SCSeq.mtx[[i]]))
+  raw.merged.SCSeq.mtx[[i]]<-raw.merged.SCSeq.mtx[[i]][,tmp]
+  print(dim(raw.merged.SCSeq.mtx[[i]]))
+}
+all.equal(rownames(raw.merged.SCSeq.mtx[[1]]),
+          rownames(raw.merged.SCSeq.mtx[[2]]))
+
+raw.metadata.3<-metadata[[2]][,c("Cell", "Cluster")]
+raw.metadata.3 %>% head()
+
+
+
+
+###final data using
 metadata[[1]]<-metadata[[1]][,c("Cell", "Cluster")]
 metadata[[1]]  %>% str()
 
@@ -242,24 +278,26 @@ names(metadata[[2]])<-c("Cell", "Cluster")
 metadata[[2]]<-subset(metadata[[2]], Cell %in% colnames(SCSeq.mtx[[2]]))
 metadata[[2]]  %>% str()
 
+metadata[[3]] <- raw.metadata.3
 
 for (i in 1:length(SCSeq.mtx)) {
   SCSeq.mtx[[i]] <- SCSeq.mtx[[i]][ , metadata[[i]]$Cell]
   SCSeq.mtx[[i]] %>% str() %>% print()
 }
+SCSeq.mtx[[3]]<-cbind(raw.merged.SCSeq.mtx[[1]],raw.merged.SCSeq.mtx[[2]])
+names(SCSeq.mtx)[3]<-"Merged"
 
-
-for (i in 1:length(use.SCSeq.mtx)) {
-  all.equal(use.meta.data[[i]]$Cell, colnames(use.SCSeq.mtx[[i]])) %>% print()
+for (i in 1:length(SCSeq.mtx)) {
+  all.equal(metadata[[i]]$Cell, colnames(SCSeq.mtx[[i]])) %>% print()
 }
 
-save.image(file=paste0(path.script,GSE.id,".mtx.RData"))
-load(paste0(path.script,GSE.id,".mtx.RData"))
+# save.image(file=paste0(path.script,GSE.id,".mtx.RData"))
+# load(paste0(path.script,GSE.id,".mtx.RData"))
 
 
 ###normallize matrix
-i<-1
-for (i in 1:length(SCSeq.mtx)) {
+# i<-1
+for (i in 3:length(SCSeq.mtx)) {
   logNormalizeMatrix <- log1p(sweep(SCSeq.mtx[[i]], 2, Matrix::colSums(SCSeq.mtx[[i]]), FUN = "/") * 10000)
   
   mean(SCSeq.mtx[[i]][,1])
