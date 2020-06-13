@@ -174,7 +174,7 @@ if (!file.exists(file.script.name)) {file.create(file.script.name)}
 
 # # ### Note: 
 # # # NormalCondition_finalaggr.mtx - metadata[[1]]$Cell
-# # # StarvationCondition_finalaggr.mtx - metadata[[2]]$id
+# # # StarvationCondition_finalaggr.mtx - metadata[[2]]$Cell
 # # # merged
 # 
 
@@ -250,7 +250,12 @@ metadata[[2]] %>% str()
 intersect(metadata[[2]]$Cell, paste0(colnames(SCSeq.mtx[[1]]),"_1")) %>% length()
 # [1] 4349
 intersect(metadata[[2]]$Cell, paste0(colnames(SCSeq.mtx[[2]]),"_2")) %>% length()
-# [1] 4347
+# [1] 4347 *** using this one
+intersect(metadata[[2]]$id, colnames(SCSeq.mtx[[2]])) %>% length()
+# [1] 4471 *** will have duplicated barcode
+intersect(metadata[[2]]$Cell, paste0(colnames(SCSeq.mtx[[2]]),"_1")) %>% length()
+# [1] 469
+
 
 raw.merged.SCSeq.mtx<-list()
 for (i in 1:length(SCSeq.mtx)) {
@@ -273,10 +278,12 @@ raw.metadata.3 %>% head()
 metadata[[1]]<-metadata[[1]][,c("Cell", "Cluster")]
 metadata[[1]]  %>% str()
 
-metadata[[2]]<-metadata[[2]][,c("id", "Cluster")]
-names(metadata[[2]])<-c("Cell", "Cluster")
+
+colnames(SCSeq.mtx[[2]])<-paste0(colnames(SCSeq.mtx[[2]]),"_2")
+metadata[[2]]<-metadata[[2]][,c("Cell", "Cluster")]
 metadata[[2]]<-subset(metadata[[2]], Cell %in% colnames(SCSeq.mtx[[2]]))
 metadata[[2]]  %>% str()
+
 
 metadata[[3]] <- raw.metadata.3
 
