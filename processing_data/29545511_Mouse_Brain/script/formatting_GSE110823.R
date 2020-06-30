@@ -39,6 +39,7 @@ if (!file.exists(file.script.name)) {file.create(file.script.name)}
 # write(paste0("Paper title: ", paper.title,"\n\n"),file=file.rmd.name,append=TRUE)
 # write(paste0("Paper link: ", paper.link,"\n\n"),file=file.rmd.name,append=TRUE)
 # write(paste0("GEO link: ", GEO.link,"\n\n"),file=file.rmd.name,append=TRUE)
+# write(paste0("Result location: ", path.result,"\n"),file=file.rmd.name,append=TRUE)
 
 
 # getGEOSuppFiles(GSE.id,makeDirectory = F,baseDir= path.raw.data)
@@ -181,13 +182,13 @@ ls()
 ### dot plot
 mat<-SCSeq.mtx %>% t()
 dim(mat)
-# rm(SCSeq.mtx)
+rm(SCSeq.mtx)
 seuratObj <- CreateSeuratObject(counts = mat)
-# rm(mat)
+rm(mat)
 ls()
 seuratObj <- NormalizeData(seuratObj)
 seuratObj <- FindVariableFeatures(seuratObj, selection.method = "vst", 
-                                  nfeatures = length(SCSeq.rownames.gene))
+                                  nfeatures = 2000)
 all_genes <- rownames(seuratObj)
 seuratObj <- ScaleData(seuratObj, features = all_genes)
 seuratObj$celltype <- as.character(cell2clusterAssignment$Cluster)
@@ -206,11 +207,18 @@ write.csv(clusterMetadataTable,
 
 
 # extract data matrix from DotPlot function
-dot <- DotPlot(object = seuratObj, features = all_genes)
-### Warning: Could not find ... in the default search locations, found in RNA assay instead
+# dot <- DotPlot(object = seuratObj, features = all_genes)
+# ### Warning: Could not find ... in the default search locations, found in RNA assay instead
 
-gene2clusterTable <- dot$data
+# i<-1
+gene2clusterTable<-NULL
+for (i in 1:length(all_genes)) {
+  tmp<-DotPlot(object = seuratObj, features = all_genes[i]) 
+  gene2clusterTable <- rbind(gene2clusterTable,tmp$data)
+}
+
 colnames(gene2clusterTable) <- c("avg_exp", "pct_exp", "gene", "celltype_id", "avg_exp_scaled")
+gene2clusterTable<-arrange(gene2clusterTable,desc(celltype_id))
 
 # export gene2clusterTable
 write.csv(gene2clusterTable,
