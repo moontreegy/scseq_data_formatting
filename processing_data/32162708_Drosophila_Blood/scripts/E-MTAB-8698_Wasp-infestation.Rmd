@@ -107,6 +107,7 @@ str(metadata)
 # filter mat based on metadata
 metadata$Cell_ID <- paste0(metadata$Cell_ID, "-1")
 str(metadata)
+length(intersect(colnames(mat), metadata$Cell_ID))
 mat <- mat[ , metadata$Cell_ID]
 dim(mat)
 ```

@@ -19,7 +19,7 @@ This paper contains two samples: Wild type, Wasp infestation.
 
 
 
-Process them seperately.
+Process them seperately. Add a combine version.
 
 The difference between `E-MTAB-8698_Wildtype.Rmd` and `E-MTAB-8698_Waspinfestation.Rmd` is the input sample name, other parts are identical.
 
