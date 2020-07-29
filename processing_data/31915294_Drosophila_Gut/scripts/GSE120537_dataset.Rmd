@@ -1,0 +1,195 @@
+---
+title: "GSE120537_dataset"
+author: "Yifang Liu"
+date: "`r Sys.Date()`"
+output:
+  rmdformats::html_clean:
+    code_folding: hide
+    fig_width: 10
+    fig_height: 10
+    highlight: kate
+    thumbnails: false
+    lightbox: true
+    gallery: true
+---
+
+```{r knitr_init, echo=FALSE, cache=FALSE}
+library(knitr)
+library(rmdformats)
+
+options(max.print = 200)
+opts_chunk$set(echo = TRUE,
+               cache = FALSE,
+               prompt = FALSE,
+               tidy = TRUE,
+               comment = NA,
+               message = FALSE,
+               warning = FALSE,
+               dev = c("png", "pdf"),
+               fig.width = 10,
+               fig.height = 10,
+               fig.align = "center",
+               # fig.path = '../Result/PDFs_/',
+               dpi = 72)
+opts_knit$set(width = 75)
+```
+
+```{r setup}
+set.seed(123)
+
+options(stringsAsFactors = FALSE)
+
+results <- "../results/"
+if (!dir.exists(results)) {dir.create(results)}
+
+suppressPackageStartupMessages({
+  library(Matrix)
+  library(tidyverse)
+  library(Seurat)
+  library(GEOquery)
+})
+```
+
+# Updated version with the following updates:
+
+2020-07-29:
+
+  * Export Gut dataset.
+
+```{r download_data}
+raw_data <- "../raw_data/"
+if (!dir.exists(raw_data)) {dir.create(raw_data)}
+
+GSE <- "GSE120537"
+# geo <- getGEOSuppFiles(GSE, makeDirectory = FALSE, baseDir = raw_data)
+
+Species <- "Drosophila"
+Tissue <- "Gut"
+```
+
+```{r load_data}
+seuratObj <- readRDS("../raw_data/integrated.rds")
+```
+
+```{r combine}
+sample <- "combine"
+
+metadata <- seuratObj@meta.data
+
+DefaultAssay(seuratObj) <- "RNA"
+selected_res <- "seurat_clusters"
+Idents(seuratObj) <- selected_res
+
+clusterMetadataTable <- table(seuratObj@meta.data[ , selected_res]) %>% as.data.frame()
+colnames(clusterMetadataTable) <- c("celltype_id", "count")
+
+# export clusterMetadataTable
+write.csv(clusterMetadataTable,
+          file = paste0(results, GSE, "_", sample, "_clusterMetadataTable_", Species, "_", Tissue, ".csv"),
+          row.names = FALSE)
+
+# extract data matrix from DotPlot function
+all_genes <- rownames(seuratObj)
+seuratObj <- ScaleData(seuratObj, features = all_genes)
+dot <- DotPlot(object = seuratObj, features = all_genes)
+gene2clusterTable <- dot$data
+colnames(gene2clusterTable) <- c("avg_exp", "pct_exp", "gene", "celltype_id", "avg_exp_scaled")
+
+# export gene2clusterTable
+write.csv(gene2clusterTable,
+          file = paste0(results, GSE, "_", sample, "_gene2clusterTable_", Species, "_", Tissue, ".csv"),
+          row.names = FALSE)
+```
+
+# Notes
+
+2020-07-28:
+
+  * Export 4 datasets.
+
+2020-06-15:
+
+  * Prepare data for CLP
+
+2020-04-12:
+
+  * Heatmap expression averaged by condition planC.
+
+Wed Dec 4, 2019:
+
+  * compatible to preview.
+
+Tue Nov 5, 2019:
+
+  * the heatmaps of the rest of the cluster from PlanC.
+
+Thu Oct 31, 2019:
+
+  * planC cluster11 markers v2 order by expression.
+
+Wed Oct 30, 2019:
+
+  * DEG with the heat map method for every condition in each cluster.
+
+Wed Oct 23, 2019:
+
+  * add injured vs WASP96hr.
+
+Tue Oct 22, 2019:
+
+  * planC Identify differential expressed genes across conditions v3 top5 top10 orderby logFC.
+
+Fri Oct 18, 2019:
+
+  * Dot Plots (separate pdfs for a, b, c) for the following genes from planC.
+
+Wed Oct 16, 2019:
+
+  * Dot plot of planC with reverse order... meaning cluster 0 on top....last cluster bottom.
+
+Sun Oct 13, 2019:
+
+  * add dot plots: Top three markers per clusters including the split (per condition); add corresponding heat maps.
+
+Sat Oct 12, 2019:
+
+  * The pdfs and pngs of Uninjured, injured, WASP96hr and All of them together (Merge) for the planC tSNE.
+
+Wed Sep 11, 2019:
+
+  * planC: merge cluster 0, 1, 14, 19 into 0.
+
+Tuesday, August 27, 2019:
+
+  * If a marker is already appeared in previous cluster, the follow up marker will be added, so that every cluster will have the same number of markers.
+
+Monday, August 26, 2019:
+
+  * Add marker genes, dotplot, heatmap.
+
+Sunday, August 25, 2019:
+
+  * If a gene express two out of three samples, we will keep these genes.
+
+Friday, August 9, 2019:
+
+  * Integrate analysis of UNinjured, injured and WASP96hr data, add Markers combined map.
+
+Friday, August 2, 2019:
+
+  * Split sample to different libraries, add QC, add combined map, change resolution (0.1 to 1).
+
+Thursday, August 1, 2019:
+
+  * Select the list of all cells of the 2 clusters (cluster 6 and 10) and do a clustering to see the sub-clusters.
+
+Monday, July 29, 2019:
+
+  * First version for integrate analysis of UNinjured injured WASP 10x indrop dropseq data.
+
+# Session Info
+
+```{r sessioninfo, message=TRUE}
+sessionInfo()
+```
+
