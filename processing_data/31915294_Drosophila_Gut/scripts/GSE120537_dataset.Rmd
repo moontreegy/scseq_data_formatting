@@ -52,9 +52,9 @@ suppressPackageStartupMessages({
 
 # Updated version with the following updates:
 
-2020-07-29:
+2020-08-04:
 
-  * Export Gut dataset.
+  * Fix inf for avg_exp for this Gut seuratObj.
 
 ```{r download_data}
 raw_data <- "../raw_data/"
@@ -89,11 +89,12 @@ write.csv(clusterMetadataTable,
           row.names = FALSE)
 
 # extract data matrix from DotPlot function
+seuratObj <- NormalizeData(seuratObj)
 all_genes <- rownames(seuratObj)
-seuratObj <- ScaleData(seuratObj, features = all_genes)
 dot <- DotPlot(object = seuratObj, features = all_genes)
 gene2clusterTable <- dot$data
 colnames(gene2clusterTable) <- c("avg_exp", "pct_exp", "gene", "celltype_id", "avg_exp_scaled")
+summary(gene2clusterTable$avg_exp)
 
 # export gene2clusterTable
 write.csv(gene2clusterTable,
@@ -102,6 +103,10 @@ write.csv(gene2clusterTable,
 ```
 
 # Notes
+
+2020-07-29:
+
+  * Export Gut dataset.
 
 2020-07-28:
 
