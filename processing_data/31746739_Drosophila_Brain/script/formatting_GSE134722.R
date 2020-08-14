@@ -51,6 +51,7 @@ if (!file.exists(file.script.name)) {file.create(file.script.name)}
 # \t\t\tUsing StarvationMetadata to match StarvationCondition_finalaggr and NormalCondition_finalaggr, getting 4347 and 4349 cells, 8696 in total (which is consistent with paper)\n\n"),
 #       file=file.rmd.name,append=TRUE)
 # write(paste0("Result location: ", path.result,"\n\n"),file=file.rmd.name,append=TRUE)
+# write(paste0("Note: reprocess the results by using the same metadata file (17 clusters)\n\n"),file=file.rmd.name,append=TRUE)
 
 
 
@@ -287,16 +288,25 @@ metadata[[2]]  %>% str()
 
 metadata[[3]] <- raw.metadata.3
 
-for (i in 1:length(SCSeq.mtx)) {
-  SCSeq.mtx[[i]] <- SCSeq.mtx[[i]][ , metadata[[i]]$Cell]
-  SCSeq.mtx[[i]] %>% str() %>% print()
-}
 SCSeq.mtx[[3]]<-cbind(raw.merged.SCSeq.mtx[[1]],raw.merged.SCSeq.mtx[[2]])
 names(SCSeq.mtx)[3]<-"Merged"
 
+
+SCSeq.mtx[[4]]<-SCSeq.mtx[[1]]
+names(SCSeq.mtx)[4]<-"Normal-reprocess-using17-clusters"
+colnames(SCSeq.mtx[[4]])<-paste0(colnames(SCSeq.mtx[[4]]),"_1")
+metadata[[4]]<-metadata[[3]][,c("Cell", "Cluster")]
+metadata[[4]]<-subset(metadata[[4]], Cell %in% colnames(SCSeq.mtx[[4]]))
+metadata[[4]]  %>% str()
+
+
+
 for (i in 1:length(SCSeq.mtx)) {
+  SCSeq.mtx[[i]] <- SCSeq.mtx[[i]][ , metadata[[i]]$Cell]
+  SCSeq.mtx[[i]] %>% str() %>% print()
   all.equal(metadata[[i]]$Cell, colnames(SCSeq.mtx[[i]])) %>% print()
 }
+
 
 # save.image(file=paste0(path.script,GSE.id,".mtx.RData"))
 # load(paste0(path.script,GSE.id,".mtx.RData"))
@@ -304,7 +314,7 @@ for (i in 1:length(SCSeq.mtx)) {
 
 ###normallize matrix
 # i<-1
-for (i in 3:length(SCSeq.mtx)) {
+for (i in 4:length(SCSeq.mtx)) {
   logNormalizeMatrix <- log1p(sweep(SCSeq.mtx[[i]], 2, Matrix::colSums(SCSeq.mtx[[i]]), FUN = "/") * 10000)
   
   mean(SCSeq.mtx[[i]][,1])
