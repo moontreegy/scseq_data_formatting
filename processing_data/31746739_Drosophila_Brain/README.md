@@ -34,3 +34,6 @@ Note:
 Result location: /n/groups/flyrnai/Yue/scseq_data_formatting/processing_data/31746739_Drosophila_Brain/results/
 
 
+Note: reprocess the results by using the same metadata file (17 clusters)
+
+
