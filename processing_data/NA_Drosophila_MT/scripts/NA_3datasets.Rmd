@@ -1,0 +1,181 @@
+---
+title: "NA_3datasets"
+author: "Yifang Liu"
+date: "`r Sys.Date()`"
+output:
+  rmdformats::html_clean:
+    code_folding: hide
+    fig_width: 10
+    fig_height: 10
+    highlight: kate
+    thumbnails: false
+    lightbox: true
+    gallery: true
+---
+
+```{r knitr_init, echo=FALSE, cache=FALSE}
+library(knitr)
+library(rmdformats)
+
+options(max.print = 200)
+opts_chunk$set(echo = TRUE,
+               cache = FALSE,
+               prompt = FALSE,
+               tidy = TRUE,
+               comment = NA,
+               message = FALSE,
+               warning = FALSE,
+               dev = c("png", "pdf"),
+               fig.width = 10,
+               fig.height = 10,
+               fig.align = "center",
+               # fig.path = '../Result/PDFs_/',
+               dpi = 72)
+opts_knit$set(width = 75)
+```
+
+```{r setup}
+set.seed(123)
+
+options(stringsAsFactors = FALSE)
+
+results <- "../results/"
+if (!dir.exists(results)) {dir.create(results)}
+
+suppressPackageStartupMessages({
+  library(Matrix)
+  library(tidyverse)
+  library(Seurat)
+  library(GEOquery)
+})
+```
+
+# Updates:
+
+2020-07-28:
+
+  * Export 4 datasets.
+
+```{r download_data}
+raw_data <- "../raw_data/"
+if (!dir.exists(raw_data)) {dir.create(raw_data)}
+
+GSE <- "NA"
+# geo <- getGEOSuppFiles(GSE, makeDirectory = FALSE, baseDir = raw_data)
+
+Species <- "Drosophila"
+Tissue <- "MT"
+```
+
+```{r load_data}
+seuratObj_origin <- readRDS("../raw_data/2020-08-01_seuratObj_MT.Rds")
+```
+
+```{r combine}
+sample <- "combine"
+
+seuratObj <- seuratObj_origin
+
+DefaultAssay(seuratObj) <- "RNA"
+selected_res <- "clusters_Jun_RJ"
+Idents(seuratObj) <- selected_res
+
+clusterMetadataTable <- table(seuratObj@meta.data[ , selected_res]) %>% as.data.frame()
+colnames(clusterMetadataTable) <- c("celltype_id", "count")
+
+# export clusterMetadataTable
+write.csv(clusterMetadataTable,
+          file = paste0(results, GSE, "_", sample, "_clusterMetadataTable_", Species, "_", Tissue, ".csv"),
+          row.names = FALSE)
+
+# extract data matrix from DotPlot function
+all_genes <- rownames(seuratObj)
+dot <- DotPlot(object = seuratObj, features = all_genes)
+gene2clusterTable <- dot$data
+colnames(gene2clusterTable) <- c("avg_exp", "pct_exp", "gene", "celltype_id", "avg_exp_scaled")
+summary(gene2clusterTable$avg_exp)
+
+# export gene2clusterTable
+write.csv(gene2clusterTable,
+          file = paste0(results, GSE, "_", sample, "_gene2clusterTable_", Species, "_", Tissue, ".csv"),
+          row.names = FALSE)
+```
+
+```{r Male}
+sample <- "Male"
+
+seuratObj <- seuratObj_origin
+
+Idents(seuratObj) <- "Sample"
+seuratObj <- subset(seuratObj, idents = "Male")
+
+DefaultAssay(seuratObj) <- "RNA"
+selected_res <- "clusters_Jun_RJ"
+Idents(seuratObj) <- selected_res
+
+clusterMetadataTable <- table(seuratObj@meta.data[ , selected_res]) %>% as.data.frame()
+colnames(clusterMetadataTable) <- c("celltype_id", "count")
+
+# export clusterMetadataTable
+write.csv(clusterMetadataTable,
+          file = paste0(results, GSE, "_", sample, "_clusterMetadataTable_", Species, "_", Tissue, ".csv"),
+          row.names = FALSE)
+
+# extract data matrix from DotPlot function
+all_genes <- rownames(seuratObj)
+dot <- DotPlot(object = seuratObj, features = all_genes)
+gene2clusterTable <- dot$data
+colnames(gene2clusterTable) <- c("avg_exp", "pct_exp", "gene", "celltype_id", "avg_exp_scaled")
+summary(gene2clusterTable$avg_exp)
+
+# export gene2clusterTable
+write.csv(gene2clusterTable,
+          file = paste0(results, GSE, "_", sample, "_gene2clusterTable_", Species, "_", Tissue, ".csv"),
+          row.names = FALSE)
+```
+
+```{r Female}
+sample <- "Female"
+
+seuratObj <- seuratObj_origin
+
+Idents(seuratObj) <- "Sample"
+seuratObj <- subset(seuratObj, idents = "Female")
+
+DefaultAssay(seuratObj) <- "RNA"
+selected_res <- "clusters_Jun_RJ"
+Idents(seuratObj) <- selected_res
+
+clusterMetadataTable <- table(seuratObj@meta.data[ , selected_res]) %>% as.data.frame()
+colnames(clusterMetadataTable) <- c("celltype_id", "count")
+
+# export clusterMetadataTable
+write.csv(clusterMetadataTable,
+          file = paste0(results, GSE, "_", sample, "_clusterMetadataTable_", Species, "_", Tissue, ".csv"),
+          row.names = FALSE)
+
+# extract data matrix from DotPlot function
+all_genes <- rownames(seuratObj)
+dot <- DotPlot(object = seuratObj, features = all_genes)
+gene2clusterTable <- dot$data
+colnames(gene2clusterTable) <- c("avg_exp", "pct_exp", "gene", "celltype_id", "avg_exp_scaled")
+summary(gene2clusterTable$avg_exp)
+
+# export gene2clusterTable
+write.csv(gene2clusterTable,
+          file = paste0(results, GSE, "_", sample, "_gene2clusterTable_", Species, "_", Tissue, ".csv"),
+          row.names = FALSE)
+```
+
+# Notes
+
+2020-07-28:
+
+  * Export 4 datasets.
+
+# Session Info
+
+```{r sessioninfo, message=TRUE}
+sessionInfo()
+```
+
