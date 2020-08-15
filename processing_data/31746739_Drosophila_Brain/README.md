@@ -37,3 +37,6 @@ Result location: /n/groups/flyrnai/Yue/scseq_data_formatting/processing_data/317
 Note: reprocess the results by using the same metadata file (17 clusters)
 
 
+Note: [new updates] reprocess the 3 conditions by using the new metadata file (16 clusters, combine the 2 Undifferentiated neurons subclusters to one)
+
+

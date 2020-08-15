@@ -52,6 +52,7 @@ if (!file.exists(file.script.name)) {file.create(file.script.name)}
 #       file=file.rmd.name,append=TRUE)
 # write(paste0("Result location: ", path.result,"\n\n"),file=file.rmd.name,append=TRUE)
 # write(paste0("Note: reprocess the results by using the same metadata file (17 clusters)\n\n"),file=file.rmd.name,append=TRUE)
+# write(paste0("Note: [new updates] reprocess the 3 conditions by using the new metadata file (16 clusters, combine the 2 Undifferentiated neurons subclusters to one)\n\n"),file=file.rmd.name,append=TRUE)
 
 
 
@@ -246,6 +247,10 @@ for(i in 1:length(file.meta)){
 
 
 metadata[[2]] %>% str()
+metadata[[2]]$Cluster %>% unique
+metadata[[2]]$Cluster<-gsub(metadata[[2]]$Cluster, pattern = " 1", replacement = "")
+metadata[[2]]$Cluster<-gsub(metadata[[2]]$Cluster, pattern = " 2", replacement = "")
+metadata[[2]]$Cluster %>% unique
 
 
 intersect(metadata[[2]]$Cell, paste0(colnames(SCSeq.mtx[[1]]),"_1")) %>% length()
@@ -300,6 +305,11 @@ metadata[[4]]<-subset(metadata[[4]], Cell %in% colnames(SCSeq.mtx[[4]]))
 metadata[[4]]  %>% str()
 
 
+names(metadata)<-c("normal_using_normal_meta",
+                   "starve_using_merged_meta",
+                   "merged_using_merged_meta",
+                   "normal_using_merged_meta")
+
 
 for (i in 1:length(SCSeq.mtx)) {
   SCSeq.mtx[[i]] <- SCSeq.mtx[[i]][ , metadata[[i]]$Cell]
@@ -307,6 +317,13 @@ for (i in 1:length(SCSeq.mtx)) {
   all.equal(metadata[[i]]$Cell, colnames(SCSeq.mtx[[i]])) %>% print()
 }
 
+names(SCSeq.mtx)[2:4]<-c("Combine2UNcells-using16Clusters-starve",
+                    "Combine2UNcells-using16Clusters-merge",
+                    "Combine2UNcells-using16Clusters-normal")
+names(SCSeq.mtx)
+
+str(SCSeq.mtx)
+str(metadata)
 
 # save.image(file=paste0(path.script,GSE.id,".mtx.RData"))
 # load(paste0(path.script,GSE.id,".mtx.RData"))
@@ -314,7 +331,7 @@ for (i in 1:length(SCSeq.mtx)) {
 
 ###normallize matrix
 # i<-1
-for (i in 4:length(SCSeq.mtx)) {
+for (i in 2:length(SCSeq.mtx)) {
   logNormalizeMatrix <- log1p(sweep(SCSeq.mtx[[i]], 2, Matrix::colSums(SCSeq.mtx[[i]]), FUN = "/") * 10000)
   
   mean(SCSeq.mtx[[i]][,1])
