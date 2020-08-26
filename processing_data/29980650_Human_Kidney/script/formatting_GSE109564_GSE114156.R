@@ -46,9 +46,9 @@ write(paste0("Result location: ", path.result,"\n"),file=file.rmd.name,append=TR
 write(paste0("Note:\n
              \tIn this paper they have two samples, healthy adult kidney (single-nuclei Seq, 4259 cells) and a single kidney transplant biopsy core (single-cell Seq, 4487 cells)\n,
              \tBesides, they compare the epithelia between healthy- and allograft sample, so I generated 5 kinds of results:\n
-             \t\thealthy kidney: 4259 nucleis with 6 clusters, results with prefix 'allograft'\n
-             \t\tallograft kidney: 4487 cells with 16 clusters, results with prefix 'healthy'\n
-             \t\tcombined epithelia: 4643 cells (healthy 3532 cells, allograft 1111 cells), results with prefix 'Combined-Epithelia-...': \n"),file=file.rmd.name,append=TRUE)
+             \t\thealthy kidney: 4259 nucleis with 6 clusters, results with prefix 'healthy'\n
+             \t\tallograft kidney: 4487 cells with 16 clusters, results with prefix 'allograft'\n
+             \t\tcombined epithelia: 4643 cells (healthy 3532 cells, allograft 1111 cells), results with prefix 'Combined-Epithelia-...' \n"),file=file.rmd.name,append=TRUE)
 
 # Comparison of healthy kidney epithelial transcriptomes with biopsy specimen counterparts identified novel segment-specific proinflammatory responses in rejection. Endothelial cells formed three distinct subclusters: resting cells and two activated endothelial cell groups.
 

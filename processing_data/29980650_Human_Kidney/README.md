@@ -20,9 +20,9 @@ Note:
 ,
              	Besides, they compare the epithelia between healthy- and allograft sample, so I generated 5 kinds of results:
 
-             		healthy kidney: 4259 nucleis with 6 clusters, results with prefix 'allograft'
+             		healthy kidney: 4259 nucleis with 6 clusters, results with prefix 'healthy'
 
-             		allograft kidney: 4487 cells with 16 clusters, results with prefix 'healthy'
+             		allograft kidney: 4487 cells with 16 clusters, results with prefix 'allograft'
 
              		combined epithelia: 4643 cells (healthy 3532 cells, allograft 1111 cells), results with prefix 'Combined-Epithelia-...' 
 
