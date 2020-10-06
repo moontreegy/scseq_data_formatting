@@ -1,0 +1,450 @@
+---
+title: "phs000159.v8.p4"
+author: "Yifang Liu"
+date: "`r Sys.Date()`"
+output:
+  rmdformats::html_clean:
+    code_folding: hide
+    fig_width: 3.5
+    fig_height: 3.5
+    highlight: kate
+    thumbnails: false
+    lightbox: true
+    gallery: true
+---
+
+```{r knitr_init, echo=FALSE, cache=FALSE}
+library(knitr)
+library(rmdformats)
+
+options(max.print = 200)
+opts_chunk$set(echo = TRUE,
+               cache = FALSE,
+               prompt = FALSE,
+               tidy = TRUE,
+               comment = NA,
+               message = FALSE,
+               warning = FALSE,
+               dev = c("png", "pdf"),
+               fig.width = 3.5,
+               fig.height = 3.5,
+               fig.align = "center",
+               # fig.path = 'PDF/',
+               dpi = 72)
+opts_knit$set(width = 75)
+```
+
+# Update
+
+2020-10-05:
+
+  * add 31413257_Human_Blood: 5 patient datasets with a combined one, select up to top 100 markers for each cluster (order by avg_logFC, p_val < 0.05), only calculate markers for cluster contains not less than 3 cells
+
+```{r setup}
+set.seed(123)
+
+raw_data <- "../raw_data"
+if (!dir.exists(raw_data)) {dir.create(raw_data)}
+
+results <- "../results"
+if (!dir.exists(results)) {dir.create(results)}
+
+options(stringsAsFactors = FALSE)
+
+# Suppress loading messages
+suppressPackageStartupMessages({
+  library(Matrix)
+  library(dplyr)
+  library(tidyverse)
+  library(Seurat)
+  library(cowplot)
+  library(Rcpp)
+  library(harmony)
+})
+```
+
+```{bash}
+# wget -O ../raw_data/508084.seurat.rds https://zenodo.org/record/3345981/files/508084.seurat.rds?download=1
+# wget -O ../raw_data/548327.seurat.rds https://zenodo.org/record/3345981/files/548327.seurat.rds?download=1
+# wget -O ../raw_data/721214.seurat.rds https://zenodo.org/record/3345981/files/721214.seurat.rds?download=1
+# wget -O ../raw_data/782328.seurat.rds https://zenodo.org/record/3345981/files/782328.seurat.rds?download=1
+# wget -O ../raw_data/809653.seurat.rds https://zenodo.org/record/3345981/files/809653.seurat.rds?download=1
+
+```
+
+```{r}
+accession_number <- "phs000159"
+
+```
+
+
+```{r 508084}
+sample <- "508084"
+
+# need change seuratObj input
+seuratObj <- readRDS(paste0("../raw_data/", sample, ".seurat.rds"))
+seuratObj
+seuratObj <- UpdateSeuratObject(object = seuratObj)
+
+seuratObj <- NormalizeData(seuratObj)
+seuratObj <- FindVariableFeatures(seuratObj, selection.method = "vst", nfeatures = 2000)
+all_genes <- rownames(seuratObj)
+seuratObj <- ScaleData(seuratObj, features = all_genes)
+
+metadata <- seuratObj@meta.data
+seuratObj$celltype_id <- as.factor(seuratObj@meta.data[ , "CellType"])
+Idents(seuratObj) <- "celltype_id"
+
+clusterMetadataTable <- table(seuratObj@meta.data[ , "celltype_id"]) %>% as.data.frame()
+colnames(clusterMetadataTable) <- c("celltype_id", "count")
+print(clusterMetadataTable$celltype_id)
+# export clusterMetadataTable
+write.csv(clusterMetadataTable,
+          file = paste0(results, "/", accession_number, "_", sample, "_clusterMetadataTable", ".csv"),
+          row.names = FALSE)
+
+# extract data matrix from DotPlot function
+dot <- DotPlot(object = seuratObj, features = all_genes)
+gene2clusterTable <- dot$data
+colnames(gene2clusterTable) <- c("avg_exp", "pct_exp", "gene", "celltype_id", "avg_exp_scaled")
+# check max value
+summary(gene2clusterTable$avg_exp)
+# export gene2clusterTable
+write.csv(gene2clusterTable,
+          file = paste0(results, "/", accession_number, "_", sample, "_gene2clusterTable", ".csv"),
+          row.names = FALSE)
+
+oneFile <- NULL
+clusterMetadataTable <- subset(clusterMetadataTable, count >= 3)
+for(celltype_id in clusterMetadataTable$celltype_id){
+    markers <- FindMarkers(seuratObj, ident.1 = celltype_id, only.pos = TRUE)
+    markers <- cbind(row.names(markers), markers)
+    colnames(markers)[1] <- "gene"
+    
+    markers$celltype_id <- celltype_id
+    markers <- markers[order(-markers$avg_logFC), ]
+    markers <- subset(markers, p_val < 0.05)
+    markers <- head(markers, 100)
+    
+    oneFile <- rbind(oneFile, markers)
+}
+
+# export markersTable
+write.csv(oneFile,
+          file = paste0(results, "/", accession_number, "_", sample, "_markersTable", ".csv"),
+          row.names = FALSE)
+```
+
+
+```{r 548327}
+sample <- "548327"
+
+# need change seuratObj input
+seuratObj <- readRDS(paste0("../raw_data/", sample, ".seurat.rds"))
+seuratObj
+seuratObj <- UpdateSeuratObject(object = seuratObj)
+
+seuratObj <- NormalizeData(seuratObj)
+seuratObj <- FindVariableFeatures(seuratObj, selection.method = "vst", nfeatures = 2000)
+all_genes <- rownames(seuratObj)
+seuratObj <- ScaleData(seuratObj, features = all_genes)
+
+metadata <- seuratObj@meta.data
+seuratObj$celltype_id <- as.factor(seuratObj@meta.data[ , "CellType"])
+Idents(seuratObj) <- "celltype_id"
+
+clusterMetadataTable <- table(seuratObj@meta.data[ , "celltype_id"]) %>% as.data.frame()
+colnames(clusterMetadataTable) <- c("celltype_id", "count")
+print(clusterMetadataTable$celltype_id)
+# export clusterMetadataTable
+write.csv(clusterMetadataTable,
+          file = paste0(results, "/", accession_number, "_", sample, "_clusterMetadataTable", ".csv"),
+          row.names = FALSE)
+
+# extract data matrix from DotPlot function
+dot <- DotPlot(object = seuratObj, features = all_genes)
+gene2clusterTable <- dot$data
+colnames(gene2clusterTable) <- c("avg_exp", "pct_exp", "gene", "celltype_id", "avg_exp_scaled")
+# check max value
+summary(gene2clusterTable$avg_exp)
+# export gene2clusterTable
+write.csv(gene2clusterTable,
+          file = paste0(results, "/", accession_number, "_", sample, "_gene2clusterTable", ".csv"),
+          row.names = FALSE)
+
+oneFile <- NULL
+clusterMetadataTable <- subset(clusterMetadataTable, count >= 3)
+for(celltype_id in clusterMetadataTable$celltype_id){
+    markers <- FindMarkers(seuratObj, ident.1 = celltype_id, only.pos = TRUE)
+    markers <- cbind(row.names(markers), markers)
+    colnames(markers)[1] <- "gene"
+    
+    markers$celltype_id <- celltype_id
+    markers <- markers[order(-markers$avg_logFC), ]
+    markers <- subset(markers, p_val < 0.05)
+    markers <- head(markers, 100)
+    
+    oneFile <- rbind(oneFile, markers)
+}
+
+# export markersTable
+write.csv(oneFile,
+          file = paste0(results, "/", accession_number, "_", sample, "_markersTable", ".csv"),
+          row.names = FALSE)
+```
+
+
+```{r 721214}
+sample <- "721214"
+
+# need change seuratObj input
+seuratObj <- readRDS(paste0("../raw_data/", sample, ".seurat.rds"))
+seuratObj
+seuratObj <- UpdateSeuratObject(object = seuratObj)
+
+seuratObj <- NormalizeData(seuratObj)
+seuratObj <- FindVariableFeatures(seuratObj, selection.method = "vst", nfeatures = 2000)
+all_genes <- rownames(seuratObj)
+seuratObj <- ScaleData(seuratObj, features = all_genes)
+
+metadata <- seuratObj@meta.data
+seuratObj$celltype_id <- as.factor(seuratObj@meta.data[ , "CellType"])
+Idents(seuratObj) <- "celltype_id"
+
+clusterMetadataTable <- table(seuratObj@meta.data[ , "celltype_id"]) %>% as.data.frame()
+colnames(clusterMetadataTable) <- c("celltype_id", "count")
+print(clusterMetadataTable$celltype_id)
+# export clusterMetadataTable
+write.csv(clusterMetadataTable,
+          file = paste0(results, "/", accession_number, "_", sample, "_clusterMetadataTable", ".csv"),
+          row.names = FALSE)
+
+# extract data matrix from DotPlot function
+dot <- DotPlot(object = seuratObj, features = all_genes)
+gene2clusterTable <- dot$data
+colnames(gene2clusterTable) <- c("avg_exp", "pct_exp", "gene", "celltype_id", "avg_exp_scaled")
+# check max value
+summary(gene2clusterTable$avg_exp)
+# export gene2clusterTable
+write.csv(gene2clusterTable,
+          file = paste0(results, "/", accession_number, "_", sample, "_gene2clusterTable", ".csv"),
+          row.names = FALSE)
+
+oneFile <- NULL
+clusterMetadataTable <- subset(clusterMetadataTable, count >= 3)
+for(celltype_id in clusterMetadataTable$celltype_id){
+    markers <- FindMarkers(seuratObj, ident.1 = celltype_id, only.pos = TRUE)
+    markers <- cbind(row.names(markers), markers)
+    colnames(markers)[1] <- "gene"
+    
+    markers$celltype_id <- celltype_id
+    markers <- markers[order(-markers$avg_logFC), ]
+    markers <- subset(markers, p_val < 0.05)
+    markers <- head(markers, 100)
+    
+    oneFile <- rbind(oneFile, markers)
+}
+
+# export markersTable
+write.csv(oneFile,
+          file = paste0(results, "/", accession_number, "_", sample, "_markersTable", ".csv"),
+          row.names = FALSE)
+```
+
+
+```{r 782328}
+sample <- "782328"
+
+# need change seuratObj input
+seuratObj <- readRDS(paste0("../raw_data/", sample, ".seurat.rds"))
+seuratObj
+seuratObj <- UpdateSeuratObject(object = seuratObj)
+
+seuratObj <- NormalizeData(seuratObj)
+seuratObj <- FindVariableFeatures(seuratObj, selection.method = "vst", nfeatures = 2000)
+all_genes <- rownames(seuratObj)
+seuratObj <- ScaleData(seuratObj, features = all_genes)
+
+metadata <- seuratObj@meta.data
+seuratObj$celltype_id <- as.factor(seuratObj@meta.data[ , "CellType"])
+Idents(seuratObj) <- "celltype_id"
+
+clusterMetadataTable <- table(seuratObj@meta.data[ , "celltype_id"]) %>% as.data.frame()
+colnames(clusterMetadataTable) <- c("celltype_id", "count")
+print(clusterMetadataTable$celltype_id)
+# export clusterMetadataTable
+write.csv(clusterMetadataTable,
+          file = paste0(results, "/", accession_number, "_", sample, "_clusterMetadataTable", ".csv"),
+          row.names = FALSE)
+
+# extract data matrix from DotPlot function
+dot <- DotPlot(object = seuratObj, features = all_genes)
+gene2clusterTable <- dot$data
+colnames(gene2clusterTable) <- c("avg_exp", "pct_exp", "gene", "celltype_id", "avg_exp_scaled")
+# check max value
+summary(gene2clusterTable$avg_exp)
+# export gene2clusterTable
+write.csv(gene2clusterTable,
+          file = paste0(results, "/", accession_number, "_", sample, "_gene2clusterTable", ".csv"),
+          row.names = FALSE)
+
+oneFile <- NULL
+clusterMetadataTable <- subset(clusterMetadataTable, count >= 3)
+for(celltype_id in clusterMetadataTable$celltype_id){
+    markers <- FindMarkers(seuratObj, ident.1 = celltype_id, only.pos = TRUE)
+    markers <- cbind(row.names(markers), markers)
+    colnames(markers)[1] <- "gene"
+    
+    markers$celltype_id <- celltype_id
+    markers <- markers[order(-markers$avg_logFC), ]
+    markers <- subset(markers, p_val < 0.05)
+    markers <- head(markers, 100)
+    
+    oneFile <- rbind(oneFile, markers)
+}
+
+# export markersTable
+write.csv(oneFile,
+          file = paste0(results, "/", accession_number, "_", sample, "_markersTable", ".csv"),
+          row.names = FALSE)
+```
+
+
+```{r 809653}
+sample <- "809653"
+
+# need change seuratObj input
+seuratObj <- readRDS(paste0("../raw_data/", sample, ".seurat.rds"))
+seuratObj
+seuratObj <- UpdateSeuratObject(object = seuratObj)
+
+seuratObj <- NormalizeData(seuratObj)
+seuratObj <- FindVariableFeatures(seuratObj, selection.method = "vst", nfeatures = 2000)
+all_genes <- rownames(seuratObj)
+seuratObj <- ScaleData(seuratObj, features = all_genes)
+
+metadata <- seuratObj@meta.data
+seuratObj$celltype_id <- as.factor(seuratObj@meta.data[ , "CellType"])
+Idents(seuratObj) <- "celltype_id"
+
+clusterMetadataTable <- table(seuratObj@meta.data[ , "celltype_id"]) %>% as.data.frame()
+colnames(clusterMetadataTable) <- c("celltype_id", "count")
+print(clusterMetadataTable$celltype_id)
+# export clusterMetadataTable
+write.csv(clusterMetadataTable,
+          file = paste0(results, "/", accession_number, "_", sample, "_clusterMetadataTable", ".csv"),
+          row.names = FALSE)
+
+# extract data matrix from DotPlot function
+dot <- DotPlot(object = seuratObj, features = all_genes)
+gene2clusterTable <- dot$data
+colnames(gene2clusterTable) <- c("avg_exp", "pct_exp", "gene", "celltype_id", "avg_exp_scaled")
+# check max value
+summary(gene2clusterTable$avg_exp)
+# export gene2clusterTable
+write.csv(gene2clusterTable,
+          file = paste0(results, "/", accession_number, "_", sample, "_gene2clusterTable", ".csv"),
+          row.names = FALSE)
+
+oneFile <- NULL
+clusterMetadataTable <- subset(clusterMetadataTable, count >= 3)
+for(celltype_id in clusterMetadataTable$celltype_id){
+    markers <- FindMarkers(seuratObj, ident.1 = celltype_id, only.pos = TRUE)
+    markers <- cbind(row.names(markers), markers)
+    colnames(markers)[1] <- "gene"
+    
+    markers$celltype_id <- celltype_id
+    markers <- markers[order(-markers$avg_logFC), ]
+    markers <- subset(markers, p_val < 0.05)
+    markers <- head(markers, 100)
+    
+    oneFile <- rbind(oneFile, markers)
+}
+
+# export markersTable
+write.csv(oneFile,
+          file = paste0(results, "/", accession_number, "_", sample, "_markersTable", ".csv"),
+          row.names = FALSE)
+```
+
+
+```{r Combine}
+sample <- "Combine"
+
+seuratObj508084 <- readRDS(paste0("../raw_data/508084.seurat.rds"))
+seuratObj548327 <- readRDS(paste0("../raw_data/548327.seurat.rds"))
+seuratObj721214 <- readRDS(paste0("../raw_data/721214.seurat.rds"))
+seuratObj782328 <- readRDS(paste0("../raw_data/782328.seurat.rds"))
+seuratObj809653 <- readRDS(paste0("../raw_data/809653.seurat.rds"))
+
+seuratObj508084 <- UpdateSeuratObject(object = seuratObj508084)
+seuratObj548327 <- UpdateSeuratObject(object = seuratObj548327)
+seuratObj721214 <- UpdateSeuratObject(object = seuratObj721214)
+seuratObj782328 <- UpdateSeuratObject(object = seuratObj782328)
+seuratObj809653 <- UpdateSeuratObject(object = seuratObj809653)
+
+seuratObj <- merge(seuratObj508084, y = c(seuratObj548327, seuratObj721214, seuratObj782328, seuratObj809653), add.cell.ids = c("508084", "548327", "721214", "782328", "809653"))
+
+rm(seuratObj508084, seuratObj548327, seuratObj721214, seuratObj782328, seuratObj809653)
+
+seuratObj <- NormalizeData(seuratObj)
+seuratObj <- FindVariableFeatures(seuratObj, selection.method = "vst", nfeatures = 2000)
+all_genes <- rownames(seuratObj)
+seuratObj <- ScaleData(seuratObj, features = all_genes)
+
+metadata <- seuratObj@meta.data
+seuratObj$celltype_id <- as.factor(seuratObj@meta.data[ , "CellType"])
+Idents(seuratObj) <- "celltype_id"
+
+clusterMetadataTable <- table(seuratObj@meta.data[ , "celltype_id"]) %>% as.data.frame()
+colnames(clusterMetadataTable) <- c("celltype_id", "count")
+print(clusterMetadataTable$celltype_id)
+# export clusterMetadataTable
+write.csv(clusterMetadataTable,
+          file = paste0(results, "/", accession_number, "_", sample, "_clusterMetadataTable", ".csv"),
+          row.names = FALSE)
+
+# extract data matrix from DotPlot function
+dot <- DotPlot(object = seuratObj, features = all_genes)
+gene2clusterTable <- dot$data
+colnames(gene2clusterTable) <- c("avg_exp", "pct_exp", "gene", "celltype_id", "avg_exp_scaled")
+# check max value
+summary(gene2clusterTable$avg_exp)
+# export gene2clusterTable
+write.csv(gene2clusterTable,
+          file = paste0(results, "/", accession_number, "_", sample, "_gene2clusterTable", ".csv"),
+          row.names = FALSE)
+
+oneFile <- NULL
+clusterMetadataTable <- subset(clusterMetadataTable, count >= 3)
+for(celltype_id in clusterMetadataTable$celltype_id){
+    markers <- FindMarkers(seuratObj, ident.1 = celltype_id, only.pos = TRUE)
+    markers <- cbind(row.names(markers), markers)
+    colnames(markers)[1] <- "gene"
+    
+    markers$celltype_id <- celltype_id
+    markers <- markers[order(-markers$avg_logFC), ]
+    markers <- subset(markers, p_val < 0.05)
+    markers <- head(markers, 100)
+    
+    oneFile <- rbind(oneFile, markers)
+}
+
+# export markersTable
+write.csv(oneFile,
+          file = paste0(results, "/", accession_number, "_", sample, "_markersTable", ".csv"),
+          row.names = FALSE)
+```
+
+
+# Notes
+
+2020-09-25:
+
+  * DEG_Method1_Human_Leukemia_scRNA-seq_809653_FIG.2.seurat.
+
+# Session Info
+
+```{r sessioninfo, message=TRUE}
+sessionInfo()
+```
