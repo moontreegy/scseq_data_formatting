@@ -1,0 +1,154 @@
+---
+title: "GSE113293"
+author: "Yifang Liu"
+date: "`r Sys.Date()`"
+output:
+  rmdformats::html_clean:
+    code_folding: hide
+    fig_width: 3.5
+    fig_height: 3.5
+    highlight: kate
+    thumbnails: false
+    lightbox: true
+    gallery: true
+---
+
+```{r knitr_init, echo=FALSE, cache=FALSE}
+library(knitr)
+library(rmdformats)
+
+options(max.print = 200)
+opts_chunk$set(echo = TRUE,
+               cache = FALSE,
+               prompt = FALSE,
+               tidy = TRUE,
+               comment = NA,
+               message = FALSE,
+               warning = FALSE,
+               dev = c("png", "pdf"),
+               fig.width = 3.5,
+               fig.height = 3.5,
+               fig.align = "center",
+               # fig.path = 'PDFs_/',
+               dpi = 72)
+opts_knit$set(width = 75)
+```
+
+# Update
+
+2020-11-20:
+
+  * GSE113293
+  
+```{r setup}
+set.seed(123)
+options(stringsAsFactors = FALSE)
+
+library(reticulate)
+py_config()
+
+suppressPackageStartupMessages({
+  library(Matrix)
+  library(tidyverse)
+  library(Seurat)
+  library(GEOquery)
+})
+```
+
+```{r download_data}
+raw_data <- "../raw_data/"
+if (!dir.exists(raw_data)) {dir.create(raw_data)}
+
+results <- "../results/"
+if (!dir.exists(results)) {dir.create(results)}
+
+GSE <- "GSE113293"
+# geo <- getGEOSuppFiles(GSE, makeDirectory = FALSE, baseDir = raw_data)
+
+Species <- "Mouse"
+Tissue <- "Testis"
+```
+
+```{r}
+download.file(url = "https://zenodo.org/record/3233870/files/SDA_objects.zip", destfile = "../raw_data/SDA_objects.zip")
+unzip("../raw_data/SDA_objects.zip", exdir = "../raw_data/SDA_objects")
+
+download.file(url = "https://zenodo.org/record/3233870/files/QC_count_matrix.rds", destfile = "../raw_data/SDA_objects/QC_count_matrix.rds")
+
+library(testisAtlas)
+load2("../raw_data/SDA_objects")
+load_component_orderings()
+unique(cell_data$group)
+
+QC_count_matrix <- readRDS("../raw_data/SDA_objects/QC_count_matrix.rds")
+testis_finalcluster <- read.table("../raw_data/testis_finalcluster.txt", header = TRUE)
+count_matrix <- t(QC_count_matrix)
+all.equal(testis_finalcluster$barcode, colnames(count_matrix))
+
+row.names(cell_data) <- cell_data$cell
+cell_data <- cell_data[testis_finalcluster$barcode, ]
+all.equal(testis_finalcluster$barcode, cell_data$cell)
+
+metadata <- cbind(testis_finalcluster, cell_data[ , c("group"), drop = FALSE])
+row.names(metadata) <- metadata$barcode
+```
+
+
+```{r Combined}
+sample <- "Combined"
+
+seuratObj <- CreateSeuratObject(counts = count_matrix)
+seuratObj <- NormalizeData(seuratObj)
+seuratObj <- FindVariableFeatures(seuratObj, selection.method = "vst", nfeatures = 2000)
+all_genes <- rownames(seuratObj)
+seuratObj <- ScaleData(seuratObj, features = all_genes)
+
+seuratObj$celltype_id <- as.factor(metadata$cluster)
+Idents(seuratObj) <- "celltype_id"
+clusterMetadataTable <- table(seuratObj@meta.data[ , "celltype_id"]) %>% as.data.frame()
+colnames(clusterMetadataTable) <- c("celltype_id", "count")
+print(clusterMetadataTable$celltype_id)
+
+# export clusterMetadataTable
+write.csv(clusterMetadataTable,
+          file = paste0(results, "/", GSE, "_", sample, "_clusterMetadataTable", ".csv"),
+          row.names = FALSE)
+
+# extract data matrix from DotPlot function
+dot <- DotPlot(object = seuratObj, features = all_genes)
+gene2clusterTable <- dot$data
+colnames(gene2clusterTable) <- c("avg_exp", "pct_exp", "gene", "celltype_id", "avg_exp_scaled")
+# check max value
+summary(gene2clusterTable$avg_exp)
+
+# export gene2clusterTable
+write.csv(gene2clusterTable,
+          file = paste0(results, "/", GSE, "_", sample, "_gene2clusterTable", ".csv"),
+          row.names = FALSE)
+
+```
+
+# Notes
+
+2020-10-08:
+
+  * GSE114530
+  
+2020-06-01:
+
+  * Process GSE131971 LL3 high resolution.
+
+2020-04-23:
+
+  * Update output file name from Matrix to gene2clusterTable; Add one more output file clusterMetadataTable.
+
+2020-04-19:
+
+  * Process GSE133486 DropSeqSVF.
+
+# Session Info
+
+```{r sessioninfo, message=TRUE}
+sessionInfo()
+```
+
