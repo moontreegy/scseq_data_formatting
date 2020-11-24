@@ -62,15 +62,6 @@ if (!dir.exists(results)) {dir.create(results)}
 
 ```
 
-```{r multiprocess}
-library(future)
-# check the current active plan
-plan()
-# change the current plan to access parallelization
-plan("multiprocess", workers = 20)
-plan()
-```
-
 ```{r loom_to_seurat}
 # run once
 # loom_file <- connect(filename = paste0("../raw_data/", "20200601_FCA_BioHub_B1_B2_Body.HARMONY_SCENIC", ".loom"), mode = "r", skip.validate = TRUE)
@@ -80,6 +71,16 @@ plan()
 filename <- "20200601_FCA_BioHub_B1_B2_Body.HARMONY_SCENIC"
 seuratObj_original <- readRDS(paste0("../raw_data/", filename, ".Rds"))
 ```
+
+```{r multiprocess}
+library(future)
+# check the current active plan
+plan()
+# change the current plan to access parallelization
+plan("multiprocess", workers = 20)
+plan()
+```
+
 
 ```{r Combine}
 sample <- "Combine"
@@ -91,8 +92,45 @@ all_genes <- rownames(seuratObj)
 seuratObj <- ScaleData(seuratObj, features = all_genes)
 
 metadata <- seuratObj@meta.data
+
+x <- table(metadata$sample_id) %>% as.data.frame()
+
+# Number of Nuclei
+dim(metadata)
+# Median UMI / cell
+median(metadata$nCount_RNA)
+# Median gene / cell
+median(metadata$nFeature_RNA)
+# Total number of genes detected
+seuratObj_sparse <- GetAssayData(object = seuratObj, slot = "counts")
+dim(seuratObj_sparse)
+seuratObj_matrix <- seuratObj_sparse[rowSums(seuratObj_sparse)>0, ] 
+dim(seuratObj_matrix)
+
 ggplot(metadata, aes(Embedding._X, Embedding._Y)) +
   geom_point(aes(colour = factor(Clusterings.1)))
+
+FCA_res0.4_annotaion <- read.csv("../raw_data/2020-11-24_FCA_res0.4_annotaion.csv")
+FCA_res0.4_annotaion$id <- gsub("Unannotated Cluster ", "", FCA_res0.4_annotaion$cluster)
+
+all.equal(row.names(metadata), FCA_res0.4_annotaion$barcode)
+row.names(FCA_res0.4_annotaion) <- FCA_res0.4_annotaion$barcode
+FCA_res0.4_annotaion <- FCA_res0.4_annotaion[row.names(metadata), ]
+all.equal(row.names(metadata), FCA_res0.4_annotaion$barcode)
+
+all.equal(metadata$Clusterings.1, FCA_res0.4_annotaion$id)
+FCA_res0.4_annotaion$id <- as.numeric(FCA_res0.4_annotaion$id)
+all.equal(metadata$Clusterings.1, FCA_res0.4_annotaion$id)
+
+FCA_res0.4_annotaion <- FCA_res0.4_annotaion[ , c("id", "annotation")]
+row.names(FCA_res0.4_annotaion) <- NULL
+FCA_res0.4_annotaion <- FCA_res0.4_annotaion[!duplicated(FCA_res0.4_annotaion), ]
+FCA_res0.4_annotaion <- FCA_res0.4_annotaion[order(FCA_res0.4_annotaion$id), ]
+
+# export clusterMetadataTable
+write.csv(FCA_res0.4_annotaion,
+          file = paste0(results, "2020-11-24_Annotation_Leiden_resolution_0.4_default_234.csv"),
+          row.names = FALSE)
 
 seuratObj$celltype_id <- as.factor(seuratObj@meta.data[ , "Clusterings.1"])
 Idents(seuratObj) <- "celltype_id"
@@ -179,7 +217,7 @@ for(celltype_id in clusterMetadataTable$celltype_id){
     oneFile <- rbind(oneFile, markers)
 }
 write.csv(oneFile,
-          file = paste0(results, sample, "_", filename, "_markers", ".csv"))
+          file = paste0(results, sample, "_", filename, "_markersTable", ".csv"))
 
 ```
 
@@ -230,7 +268,7 @@ for(celltype_id in clusterMetadataTable$celltype_id){
     oneFile <- rbind(oneFile, markers)
 }
 write.csv(oneFile,
-          file = paste0(results, sample, "_", filename, "_markers", ".csv"))
+          file = paste0(results, sample, "_", filename, "_markersTable", ".csv"))
 
 ```
 
@@ -281,7 +319,7 @@ for(celltype_id in clusterMetadataTable$celltype_id){
     oneFile <- rbind(oneFile, markers)
 }
 write.csv(oneFile,
-          file = paste0(results, sample, "_", filename, "_markers", ".csv"))
+          file = paste0(results, sample, "_", filename, "_markersTable", ".csv"))
 
 ```
 
